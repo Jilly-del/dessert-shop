@@ -117,7 +117,12 @@ export default function App() {
       </div>
 
       <div className=" w-2/5">
-        <Cart cartNum={cartNum} cartItem={cartItem} />
+        <Cart
+          cartNum={cartNum}
+          cartItem={cartItem}
+          setCartItem={setCartItem}
+          setCartNum={setCartNum}
+        />
       </div>
     </div>
   );
@@ -131,7 +136,6 @@ function Carts({ setCartNum, cartNum, setCartItem }) {
           item={item}
           setCartNum={setCartNum}
           cartNum={cartNum}
-          cartItem={item}
           setCartItem={setCartItem}
           key={item.name}
         />
@@ -147,22 +151,50 @@ function Card({ item, setCartNum, cartNum, setCartItem }) {
 
   function handleCart() {
     setClicked(true);
-    setCart();
-  }
-
-  function setCart() {
-    setCartItem((previousCart) => [...previousCart, item]);
+    setCartItem((prevItems) => {
+      const existingItem = prevItems.find(
+        (cartItem) => cartItem.name === item.name
+      );
+      if (existingItem) {
+        return prevItems.map((cartItem) =>
+          cartItem.name === item.name
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            : cartItem
+        );
+      } else {
+        return [
+          ...prevItems,
+          { name: item.name, price: item.price, quantity: 1 },
+        ];
+      }
+    });
+    setCartNum(cartNum + 1);
   }
 
   function plus() {
+    setCartItem((prevItems) =>
+      prevItems.map((cartItem) =>
+        cartItem.name === item.name
+          ? { ...cartItem, quantity: cartItem.quantity + 1 }
+          : cartItem
+      )
+    );
+    setCartNum(cartNum + 1);
     setNum((prevNum) => {
       const newNum = prevNum + 1;
       setCartNum(cartNum + 1);
       return newNum;
     });
   }
-
   function minus() {
+    setCartItem((prevItems) =>
+      prevItems.map((cartItem) =>
+        cartItem.name === item.name && cartItem.quantity > 1
+          ? { ...cartItem, quantity: cartItem.quantity - 1 }
+          : cartItem
+      )
+    );
+    setCartNum(cartNum > 0 ? cartNum - 1 : 0);
     if (num > 0) {
       setNum((prevNum) => {
         const newNum = prevNum - 1;
@@ -197,63 +229,152 @@ function Card({ item, setCartNum, cartNum, setCartItem }) {
         <div className="py-8 px-4">
           <p className="text-rose-500">{category}</p>
           <p className="font-semibold text-rose-900  "> {name}</p>
-          <p className="text-rose-600 font-semibold"> {`$${price}`}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Cart({ cartNum, cartItem }) {
-  return (
-    <div className="w-full rounded-xl ml-4 p-8  bg-white">
-      <p className="font-semibold text-2xl text-rose-600">
-        Your Cart ({cartNum})
-      </p>
-      {/* <div className="flex flex-col justify-center items-center py-8  ">
-        <img src="/images/illustration-empty-cart.svg" alt="" />
-        <p className="text-rose-500">You added item will appear hear</p>
-      </div> */}
-      <div>
-        <div className="flex justify-between border-b-2 pt-5 pb-5">
-          <div className="">
-            <p className="text-l py-2  text-rose-900 font-semibold">
-              classic Tiramisu
-            </p>
-            <span className=" text-rose-600 pr-4 py-4">1x</span>
-            <span className="text-rose-400 pr-2 ">@$5.50</span>
-            <span className="text-rose-500">$5.50</span>
-          </div>
-          <img
-            className="hover:font-bold cursor-pointer"
-            src="images\icon-remove-item.svg"
-            alt="hiii"
-          />
-        </div>
-
-        <div className="flex justify-between py-3">
-          <p> Order Total</p>
-          <p>$45</p>
-        </div>
-        <div className="my-5 flex items-center justify-center bg-red-50 rounded-md py-2  ">
-          <img src="images\icon-carbon-neutral.svg" alt="yooo" />
-          <p className="p-2">
-            This is a <span className="font-bold">carbon-neutral</span> delivery
+          <p className="text-rose-600 font-semibold">
+            {" "}
+            {`$${price.toFixed(2)}`}
           </p>
         </div>
-        <button className="w-full py-3 rounded-3xl bg-rose-800 text-white">
-          confirm order
-        </button>
       </div>
     </div>
   );
 }
 
-/*
-hook.js:608 Warning: Cannot update a component (`App`) while rendering a different component (`Card`). To locate the bad setState() call inside `Card`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render Error Component Stack
-    at Card (App.js:143:1)
-    at div (<anonymous>)
-    at Carts (App.js:126:1)
-    at div (<anonymous>)
-    at div (<anonymous>)
-    at App (App.js:106:1)*/
+function Cart({ cartNum, cartItem, setCartItem, setCartNum }) {
+  const [orderConfirmed, setOrderConfirmed] = useState(false);
+  const [confirmedItems, setConfirmedItems] = useState([]);
+  const [confirmedTotalPrice, setConfirmedTotalPrice] = useState(0);
+
+  const totalPrice = cartItem
+    .reduce((total, item) => total + item.price * item.quantity, 0)
+    .toFixed(2);
+
+  function confirmOrder() {
+    setConfirmedItems(cartItem);
+    setConfirmedTotalPrice(totalPrice);
+    setOrderConfirmed(true);
+    setCartItem([]);
+    setCartNum(0);
+  }
+
+  function removeItem(name) {
+    setCartItem((prevItems) => {
+      const itemToRemove = prevItems.find((item) => item.name === name);
+      const newItems = prevItems.filter((item) => item.name !== name);
+      setCartNum(
+        (prevCartNum) =>
+          prevCartNum - (itemToRemove ? itemToRemove.quantity : 0)
+      );
+      return newItems;
+    });
+  }
+
+  return (
+    <div className="relative">
+      {orderConfirmed && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-40"></div>
+      )}
+      <div className="relative z-50 w-full rounded-xl  p-4 bg-white right-1000">
+        {orderConfirmed ? (
+          <div className="bg-white ml-2 p-1">
+            <img src="images/icon-order-confirmed.svg" alt="Order Confirmed" />
+            <h2 className="text-3xl font-bold my-2">Order Confirmed</h2>
+            <p className="text-rose-500 my-2">We hope you enjoy your food</p>
+            {confirmedItems.length > 0 &&
+              confirmedItems.map((item, index) => (
+                <div
+                  className="flex justify-between py-2 my-2 pl-2 bg-red-100 rounded-lg"
+                  key={index}
+                >
+                  <div>
+                    <p className="text-l py-2 text-rose-900 font-semibold">
+                      {item.name}
+                    </p>
+                    <span className="text-rose-600 pr-4 py-4">
+                      {item.quantity}x
+                    </span>
+                    <span className="text-rose-400 pr-2">
+                      ${item.price.toFixed(2)}
+                    </span>
+                    <span className="text-rose-500">
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            <div className="flex justify-between py-3">
+              <p>Order Total</p>
+              <p>${confirmedTotalPrice}</p>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <p className="font-semibold text-2xl text-rose-600">
+              Your Cart ({cartNum})
+            </p>
+            {cartItem.length > 0 ? (
+              <div>
+                {cartItem.map((item, index) => (
+                  <div
+                    className="flex justify-between border-b-2 pt-5 pb-5"
+                    key={index}
+                  >
+                    <div>
+                      <p className="text-l py-2 text-rose-900 font-semibold">
+                        {item.name}
+                      </p>
+                      <span className="text-rose-600 pr-4 py-4">
+                        {item.quantity}
+                      </span>
+                      <span className="text-rose-400 pr-2">
+                        ${item.price.toFixed(2)}
+                      </span>
+                      <span className="text-rose-500">
+                        ${(item.price * item.quantity).toFixed(2)}
+                      </span>
+                    </div>
+                    <img
+                      className="hover:font-bold cursor-pointer"
+                      src="images/icon-remove-item.svg"
+                      alt="Remove item"
+                      onClick={() => removeItem(item.name)}
+                    />
+                  </div>
+                ))}
+                <div className="flex justify-between py-3">
+                  <p>Order Total</p>
+                  <p>${totalPrice}</p>
+                </div>
+                <div className="my-5 flex items-center justify-center bg-red-50 rounded-md py-2">
+                  <img
+                    src="images/icon-carbon-neutral.svg"
+                    alt="Carbon Neutral"
+                  />
+                  <p className="p-2">
+                    This is a <span className="font-bold">carbon-neutral</span>{" "}
+                    delivery
+                  </p>
+                </div>
+                <button
+                  onClick={confirmOrder}
+                  className="w-full py-3 rounded-3xl bg-rose-800 text-white"
+                >
+                  Confirm Order
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col justify-center items-center py-8">
+                <img
+                  src="/images/illustration-empty-cart.svg"
+                  alt="Empty Cart"
+                />
+                <p className="text-rose-500">
+                  Your added items will appear here
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

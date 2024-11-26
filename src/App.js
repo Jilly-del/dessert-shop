@@ -106,8 +106,8 @@ export default function App() {
   const [cartNum, setCartNum] = useState(0);
   const [cartItem, setCartItem] = useState([]);
   return (
-    <div className="flex w-full p-10 ">
-      <div className=" w-3/5">
+    <div className=" lg:flex w-full p-10 ">
+      <div className=" lg: w-3/ md:w-2/3">
         <h1 className="text-3xl font-semibold mb-6">Dessert</h1>
         <Carts
           setCartNum={setCartNum}
@@ -116,7 +116,7 @@ export default function App() {
         />
       </div>
 
-      <div className=" w-2/5">
+      <div className=" lg:w-2/5 m-5">
         <Cart
           cartNum={cartNum}
           cartItem={cartItem}
@@ -182,7 +182,6 @@ function Card({ item, setCartNum, cartNum, setCartItem }) {
     setCartNum(cartNum + 1);
     setNum((prevNum) => {
       const newNum = prevNum + 1;
-      setCartNum(cartNum + 1);
       return newNum;
     });
   }
@@ -194,7 +193,7 @@ function Card({ item, setCartNum, cartNum, setCartItem }) {
           : cartItem
       )
     );
-    setCartNum(cartNum > 0 ? cartNum - 1 : 0);
+
     if (num > 0) {
       setNum((prevNum) => {
         const newNum = prevNum - 1;
